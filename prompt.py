@@ -17,7 +17,6 @@ class User(Base):
 
 Base.metadata.create_all(bind=engine)
 
-FastAPI app
 app = FastAPI()
 
 def get_db():
