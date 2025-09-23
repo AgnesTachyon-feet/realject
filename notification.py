@@ -138,3 +138,4 @@ def delete_notification(notification_id: int, db: Session = Depends(get_db)):
     return {"message": "Notification deleted successfully"}
 
 
+
