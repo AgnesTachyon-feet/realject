@@ -136,3 +136,4 @@ def delete_notification(notification_id: int, db: Session = Depends(get_db)):
     db.delete(notification)
     db.commit()
     return {"message": "Notification deleted successfully"}
+
