@@ -1,43 +1,62 @@
-from typing import TypeVar, Generic, Optional
+from typing import Optional, TypeVar, Generic
 from sqlalchemy.orm import Session
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
-from config import SECRET_KEY, ALGORITHM
 
 from fastapi import Depends, Request, HTTPException
-from fastapi.security import HTTPBearer, HTTPBasicCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-T = TypeVar('T')
+from config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
-# users
+T = TypeVar("T")
 
-class BaseRepo():
+# -------------------- Repos --------------------
+
+class BaseRepo(Generic[T]):
     @staticmethod
-    def insert(db: Session, model: Generic[T]):
+    def insert(db: Session, model: T) -> T:
         db.add(model)
         db.commit()
         db.refresh(model)
+        return model
 
 class UsersRepo(BaseRepo):
     @staticmethod
-    def find_by_username(db: Session, model: Generic[T], username: str):
+    def find_by_username(db: Session, model, username: str):
         return db.query(model).filter(model.username == username).first()
 
-#token
-class JWTRepo():
-    def generate_token(data: dict, expires_delta: Optional[timedelta] = None):
+# -------------------- JWT --------------------
+
+class JWTRepo:
+    @staticmethod
+    def generate_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
         to_encode = data.copy()
-        if expires_delta:
-            expire = datetime.utcnow() + expires_delta
-        else:
-            expire = datetime.utcnow() + timedelta(minutes = 15)
-            to_encode.update({"exp": expire})
-            encode_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm = ALGORITHM)
-            return encode_jwt
-    def decode_token(token: str):
+        expire = datetime.now(timezone.utc) + (
+            expires_delta or timedelta(minutes=int(ACCESS_TOKEN_EXPIRE_MINUTES))
+        )
+        # jose จะเข้าใจ "exp" เป็น datetime-aware ได้
+        to_encode.update({"exp": expire})
+        return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+    @staticmethod
+    def decode_token(token: str) -> Optional[dict]:
         try:
-            decode_token = jwt.decode(token, SECRET_KEY, algorithms = [ALGORITHM])
-            return decode_token if decode_token['expires'] >= datetime.time() else None
-        except:
-            return{}
+            # ถ้า token หมดอายุ jose จะโยนข้อยกเว้นให้เลย ไม่ต้องเช็กเอง
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            return payload
+        except JWTError:
+            return None
+
+# -------------------- Bearer dependency (ถ้าจะใช้) --------------------
+
+class JWTBearer(HTTPBearer):
+    async def __call__(self, request: Request):
+        credentials: HTTPAuthorizationCredentials = await super().__call__(request)
+        if not credentials or credentials.scheme.lower() != "bearer":
+            raise HTTPException(status_code=403, detail="Invalid auth scheme")
+
+        payload = JWTRepo.decode_token(credentials.credentials)
+        if payload is None:
+            raise HTTPException(status_code=403, detail="Invalid or expired token")
+        return payload
