@@ -18,4 +18,4 @@
 `ถ้าจะทำ feature ใหม่ก็เปิด git bash` แล้วพิมพ์
 `git checkout -b feature/ชื่อฟีเจอร์ตั้งให้มีความหมาย`
 
-# อย่า merge มั่วเด็ดขาด
+# merge  แล้วมี conflict มาบอก
