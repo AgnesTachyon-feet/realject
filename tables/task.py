@@ -12,8 +12,8 @@ from config import Base
 class Task(Base):
     __tablename__ = "tasks"
 
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(255), nullable=False)
+    id = Column(Integer, primary_key=True)
+    title = Column(String, nullable=False)
     description = Column(Text, nullable=True)
     due_date = Column(DateTime, nullable=True)
     points = Column(Integer, default=0, nullable=False)
@@ -26,3 +26,4 @@ class Task(Base):
     # ความสัมพันธ์กับ User (parent และ child)
     parent = relationship("User", foreign_keys=[parent_id])
     child = relationship("User", foreign_keys=[child_id])
+    '''ต้องทำให้มัน foreign ให้ได้'''
