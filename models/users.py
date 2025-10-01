@@ -18,6 +18,8 @@ class Register(BaseModel):
 
     first_name: str
     last_name: str
+    
+    role : str
 #respon
 class ResponseSchema(BaseModel):
     code: str

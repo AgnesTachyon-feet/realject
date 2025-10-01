@@ -1,18 +1,25 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, DateTime ,Enum
+import enum
 from config import Base
 import datetime
+
+class RoleEnum(enum.Enum):
+    kid = "kid"
+    parent = "parent"
 
 class Users(Base):
     __tablename__ = 'users'
 
-    id = Column(Integer, primary_key=True)
-    username = Column(String)
-    password = Column(String)
-    email = Column(String)
-    phone_number = Column(String)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String, nullable=False, unique=True)
+    password = Column(String, nullable=False)
+    email = Column(String, nullable=False, unique=True)
+    phone_number = Column(String, nullable=False, unique=True)
 
-    first_name = Column(String)
-    last_name = Column(String)
+    first_name = Column(String, nullable=False)
+    last_name = Column(String, nullable=False)
+
+    role = Column(Enum(RoleEnum, name="role_enum"), nullable=False)
 
     create_date = Column(DateTime, default = datetime.datetime.now())
-    update_date = Column(DateTime)
+    update_date = Column(DateTime, onupdate=datetime.datetime.now())

@@ -10,9 +10,9 @@ import os, shutil, uuid
 from typing import List
 
 from config import get_db
-from app.models.submission import Submission, SubmissionStatus
-from app.models.task import Task
-from app.schemas.submission import SubmissionCreate, SubmissionDecision, SubmissionOut
+from tables.submission import Submission, SubmissionStatus
+from tables.task import Task
+from models.submission import SubmissionCreate, SubmissionDecision, SubmissionOut
 
 router = APIRouter(prefix="/submissions", tags=["Submissions"])
 

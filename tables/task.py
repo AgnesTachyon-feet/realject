@@ -19,11 +19,11 @@ class Task(Base):
     points = Column(Integer, default=0, nullable=False)
 
     parent_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    child_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    kid_id = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    # ความสัมพันธ์กับ User (parent และ child)
+    # ความสัมพันธ์กับ User (parent และ kid)
     parent = relationship("User", foreign_keys=[parent_id])
-    child = relationship("User", foreign_keys=[child_id])
+    kid = relationship("User", foreign_keys=[kid_id])
     '''ต้องทำให้มัน foreign ให้ได้'''

@@ -23,7 +23,8 @@ async def signup(request: Register,db: Session = Depends(get_db)):
             email = request.email,
             phone_number = request.phone_number,
             first_name = request.first_name,
-            last_name = request.last_name)
+            last_name = request.last_name,
+            role = request.role)
         UsersRepo.insert(db, _user)
         return ResponseSchema(code = "200", status = "Ok", message = "Success save data").dict(exclude_none = True)
     except Exception as error:
