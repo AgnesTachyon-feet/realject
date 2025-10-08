@@ -1,14 +1,24 @@
-from fastapi import FastAPI
-from config import engine
+from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from config import Base, engine
+# import ตารางทั้งหมด เพื่อให้สร้างเองตอน start
+from tables import users, tasks, submissions, rewards
+from tables import notifications, reward_redeems, logs
 
-import tables.users as user_tables
-import routes.users as users_routes
+from routes.pages import auth_page, parent_page, kid_page
 
-user_tables.Base.metadata.create_all(bind=engine)
-app = FastAPI()
+Base.metadata.create_all(bind=engine)
 
-app.include_router(users_routes.router)
+app = FastAPI(title="Parent–Kid ToDoList v9 + Notifications + Logs")
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
+app.include_router(auth_page.router)
+app.include_router(parent_page.router)
+app.include_router(kid_page.router)
 
 @app.get("/")
-async def roof():
-   return "Hello World"
+def index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request, "role": None})

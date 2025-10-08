@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<h3 class="mb-3 text-dark">งานที่เด็กส่งมา</h3>
+<table class="table table-hover align-middle shadow-sm">
+<thead class="table-dark"><tr><th>งาน</th><th>เด็ก</th><th>สถานะ</th><th>ไฟล์</th><th>ตัดสิน</th></tr></thead>
+<tbody>
+{% for s in subs %}
+<tr>
+  <td>{{ s.task.title if s.task else '-' }}</td>
+  <td>{{ s.kid.username if s.kid else s.kid_id }}</td>
+  <td><span class="badge bg-{{ 'success' if s.status=='approved' else 'danger' if s.status=='rejected' else 'warning' }}">{{ s.status }}</span></td>
+  <td>
+    {% if s.evidence_path %}
+      <a href="/{{ s.evidence_path }}" target="_blank" class="btn btn-sm btn-outline-info">ดูไฟล์</a>
+    {% else %}<span class="text-muted">-</span>{% endif %}
+  </td>
+  <td>
+    {% if s.status == "pending" %}
+    <form action="/parent/submission/decision/{{ s.id }}" method="post" class="d-inline">
+      <input type="hidden" name="pid" value="{{ pid }}">
+      <button name="approve" value="yes" class="btn btn-sm btn-success">✔️</button>
+      <button name="approve" value="no" class="btn btn-sm btn-danger">✖️</button>
+    </form>
+    {% endif %}
+  </td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endblock %}
