@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.dialects.postgresql import ENUM as PGEnum
+from sqlalchemy.orm import relationship
 import enum
 from config import Base
 import datetime
@@ -24,3 +25,14 @@ class Users(Base):
 
     create_date = Column(DateTime, default = datetime.datetime.now())
     update_date = Column(DateTime, onupdate=datetime.datetime.now())
+
+    tasks_created = relationship(
+        "Task",  # ชื่อ class ในไฟล์ tasks.py
+        foreign_keys="Task.parent_id",
+        back_populates="parent"
+    )
+    tasks_assigned = relationship(
+        "Task",
+        foreign_keys="Task.kid_id",
+        back_populates="kid"
+    )
