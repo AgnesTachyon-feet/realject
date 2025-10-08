@@ -1,6 +1,8 @@
 from typing import Generic, Optional, TypeVar
 from pydantic.generics import GenericModel
 from pydantic import BaseModel, Field
+import enum
+from tables.users import RoleEnum
 
 T = TypeVar('T')
 
@@ -19,7 +21,7 @@ class Register(BaseModel):
     first_name: str
     last_name: str
     
-    role : str
+    role : RoleEnum
 #respon
 class ResponseSchema(BaseModel):
     code: str
