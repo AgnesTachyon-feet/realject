@@ -1,5 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
+{% if err == 'not_in_family' %}
+  <div class="alert alert-danger">❌ เพิ่มงานไม่ได้: เด็กไม่ได้อยู่ในครอบครัวเดียวกัน</div>
+{% endif %}
+{% if ok == 'task_created' %}
+  <div class="alert alert-success">✅ สร้างงานเรียบร้อย</div>
+{% endif %}
+
 <h3 class="text-primary mb-3">Parent Dashboard – {{ parent.username }}</h3>
 
 <div class="row">
@@ -26,6 +33,7 @@
       <div class="card-header bg-success text-white">เพิ่มของรางวัล</div>
       <div class="card-body">
         <form action="/parent/reward/add" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="parent_id" value="{{ parent.id }}">
           <input name="name" class="form-control mb-2" placeholder="ชื่อรางวัล">
           <input name="cost" type="number" class="form-control mb-2" placeholder="แต้มที่ใช้แลก">
           <input name="description" class="form-control mb-2" placeholder="รายละเอียด">
@@ -35,19 +43,55 @@
       </div>
     </div>
   </div>
+  
+  <div class="card mb-3">
+    <div class="card-header">👪 จัดการครอบครัว</div>
+    <div class="card-body">
+      <form action="/parent/family/create" method="post" class="row g-2 mb-2">
+        <input type="hidden" name="pid" value="{{ parent.id }}">
+        <div class="col-md-6"><input name="name" class="form-control" placeholder="ชื่อครอบครัว/ปาร์ตี้"></div>
+        <div class="col-md-3"><button class="btn btn-dark w-100">สร้างครอบครัว</button></div>
+      </form>
+      <form action="/parent/family/add-kid" method="post" class="row g-2">
+        <input type="hidden" name="pid" value="{{ parent.id }}">
+        <div class="col-md-4"><input name="family_code" class="form-control" placeholder="Family Code"></div>
+        <div class="col-md-4"><input name="kid_username" class="form-control" placeholder="Kid Username"></div>
+        <div class="col-md-3"><button class="btn btn-outline-primary w-100">เพิ่มเด็กเข้าครอบครัว</button></div>
+      </form>
+    </div>
+  </div>
+
 </div>
 
-<h4 class="mt-4">🔔 การแจ้งเตือนล่าสุด</h4>
-<ul class="list-group mb-3">
-  {% for n in notis %}
-    <li class="list-group-item d-flex justify-content-between align-items-center">
-      <div><div class="small text-muted">{{ n.created_at }}</div>{{ n.message }}</div>
-      <span class="badge bg-light text-dark">{{ n.type }}</span>
-    </li>
-  {% else %}
-    <li class="list-group-item text-muted">ยังไม่มีแจ้งเตือน</li>
-  {% endfor %}
-</ul>
+<h4 class="mt-4 d-flex align-items-center">
+  🔔 การแจ้งเตือน
+  <button class="btn btn-sm btn-outline-secondary ms-2" type="button"
+          data-bs-toggle="collapse" data-bs-target="#parentNotiBox">
+    ย่อ/ขยาย
+  </button>
+  <form action="/parent/notifications/clear/{{ parent.id }}" method="post" class="ms-2">
+    <button class="btn btn-sm btn-outline-primary">ทำเป็นอ่านแล้ว</button>
+  </form>
+</h4>
+
+<div class="collapse show" id="parentNotiBox">
+  <ul class="list-group mb-3">
+    {% for n in notis %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+          <div class="small text-muted">{{ n.created_at }}</div>
+          {{ n.message }}
+        </div>
+        <span class="badge {{ 'bg-secondary' if n.is_read else 'bg-warning text-dark' }}">
+          {{ n.type }}
+        </span>
+      </li>
+    {% else %}
+      <li class="list-group-item text-muted">ยังไม่มีแจ้งเตือน</li>
+    {% endfor %}
+  </ul>
+</div>
+
 
 <h4 class="mt-4">🧾 คำขอแลกรางวัล (รออนุมัติ)</h4>
 <ul class="list-group mb-4">

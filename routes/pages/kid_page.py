@@ -2,13 +2,17 @@ from fastapi import APIRouter, Request, Form, Depends, UploadFile, File
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 from config import get_db
 from tables import users, tasks, submissions, rewards
-from tables.reward_redeems import RewardRedeem
+from tables.tasks import TaskStatus,Task
+from tables.reward_redeems import RewardRedeem, RedeemStatus
 from tables.notifications import NotiType, Notification
 from core.notify import push_noti, unread_count
 from core.logger import add_log
 import os, shutil, uuid
+from tables.notifications import Notification
+from fastapi.responses import RedirectResponse
 
 router = APIRouter(prefix="/kid", tags=["Kid Pages"])
 templates = Jinja2Templates(directory="templates")
@@ -23,10 +27,22 @@ def save_file(file: UploadFile):
         shutil.copyfileobj(file.file, buffer)
     return path
 
+@router.post("/notifications/clear/{kid_id}")
+def clear_kid_notifications(kid_id: int, db: Session = Depends(get_db)):
+    db.query(Notification).filter(
+        Notification.to_user_id == kid_id,
+        Notification.is_read == False
+    ).update({"is_read": True})
+    db.commit()
+    return RedirectResponse(f"/kid/dashboard/{kid_id}", status_code=303)
+
 @router.get("/dashboard/{kid_id}")
 def dashboard_kid(request: Request, kid_id: int, db: Session = Depends(get_db)):
     kid = db.get(users.Users, kid_id)
-    task_list = db.query(tasks.Task).filter(tasks.Task.kid_id == kid_id).all()
+    task_list = db.query(Task).filter(
+        Task.kid_id == kid_id,
+        Task.status.in_([TaskStatus.assigned, TaskStatus.rejected])
+    ).all()
     rewards_list = db.query(rewards.Reward).all()
     subs = db.query(submissions.Submission).filter(submissions.Submission.kid_id == kid_id).all()
     notis = db.query(Notification).filter(Notification.to_user_id == kid_id).order_by(Notification.created_at.desc()).limit(20).all()
@@ -36,18 +52,22 @@ def dashboard_kid(request: Request, kid_id: int, db: Session = Depends(get_db)):
         "notis": notis, "unread": uc, "role": "kid", "kid_id": kid_id
     })
 
+
 @router.post("/submit/{task_id}")
 def submit_task(task_id: int, kid_id: int = Form(...), message: str = Form(""),
                 file: UploadFile = File(None), db: Session = Depends(get_db)):
     path = save_file(file) if file else None
     s = submissions.Submission(task_id=task_id, kid_id=kid_id, message=message, evidence_path=path)
-    db.add(s); db.commit()
+    db.add(s)
 
-    task = db.get(tasks.Task, task_id)
-    push_noti(db, to_user_id=task.parent_id, actor_user_id=kid_id,
-              type=NotiType.submission_submitted, entity="submission", entity_id=s.id,
-              message=f"เด็กส่งงาน: {task.title}")
-    add_log(db, "submission_create", kid_id, "submissions", s.id, {"message": message})
+    # เซตสถานะ task เป็น submitted เพื่อซ่อนจาก kid
+    t = db.get(Task, task_id)
+    if t and t.kid_id == kid_id:
+        t.status = TaskStatus.submitted
+
+    db.commit()
+    # noti + log คงเดิม...
+    # ...
     return RedirectResponse(f"/kid/dashboard/{kid_id}", status_code=303)
 
 @router.post("/reward/redeem/{rid}")

@@ -10,28 +10,42 @@
 <body class="bg-light">
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container">
-    <a class="navbar-brand" href="/">ToDoList</a>
+    <a class="navbar-brand"
+   href="{% if role == 'parent' %}/parent/dashboard/{{ pid }}
+          {% elif role == 'kid' %}/kid/dashboard/{{ kid_id }}
+          {% else %}/{% endif %}">
+  ToDoList
+</a>
     <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navMenu">
       <span class="navbar-toggler-icon"></span>
     </button>
+
     <div id="navMenu" class="collapse navbar-collapse">
       <div class="navbar-nav ms-auto">
         {% if role == "parent" %}
-          <a class="nav-link position-relative" href="/parent/dashboard/{{ pid or '' }}">
-            🏠 Dashboard
+          <!-- Home = ไป dashboard ของ parent -->
+          <a class="nav-link position-relative" href="/parent/dashboard/{{ pid }}">
+            🏠 Home
             {% if unread and unread > 0 %}
               <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ unread }}</span>
             {% endif %}
           </a>
-          <a class="nav-link" href="/parent/submissions/{{ pid or '' }}">📋 Submissions</a>
+          <a class="nav-link" href="/parent/submissions/{{ pid }}">📋 Submissions</a>
+          <!-- Logout = แค่พาไปหน้า login (ไม่มี session ให้ล้าง) -->
+          <a class="btn btn-sm btn-outline-light ms-2" href="/login">Logout</a>
+
         {% elif role == "kid" %}
-          <a class="nav-link position-relative" href="/kid/dashboard/{{ kid_id or '' }}">
-            🏠 My Tasks
+          <!-- Home = ไป dashboard ของ kid -->
+          <a class="nav-link position-relative" href="/kid/dashboard/{{ kid_id }}">
+            🏠 Home
             {% if unread and unread > 0 %}
               <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ unread }}</span>
             {% endif %}
           </a>
+          <a class="btn btn-sm btn-outline-light ms-2" href="/login">Logout</a>
+
         {% else %}
+          <!-- ผู้เยี่ยมชมทั่วไป -->
           <a class="nav-link" href="/register">Register</a>
           <a class="nav-link" href="/login">Login</a>
         {% endif %}

@@ -2,8 +2,9 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from config import Base, engine
-# import ตารางทั้งหมด เพื่อให้สร้างเองตอน start
+
 from tables import users, tasks, submissions, rewards
+from tables import families
 from tables import notifications, reward_redeems, logs
 
 from routes.pages import auth_page, parent_page, kid_page
