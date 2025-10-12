@@ -1,76 +1,25 @@
 {% extends "base.html" %}
+{% block title %}Kid Dashboard{% endblock %}
 {% block content %}
-<h3 class="text-info mb-2">Welcome {{ kid.username }}</h3>
-<p>คะแนนสะสม: <span class="badge bg-primary">{{ kid.points }}</span></p>
+<div class="card" style="text-align:center;">
+  <h2>สวัสดี {{ kid.first_name }}</h2>
 
-<h4 class="mt-4 d-flex align-items-center">
-  🔔 การแจ้งเตือนของฉัน
-  <button class="btn btn-sm btn-outline-secondary ms-2" type="button"
-          data-bs-toggle="collapse" data-bs-target="#kidNotiBox">
-    ย่อ/ขยาย
-  </button>
-  <form action="/kid/notifications/clear/{{ kid.id }}" method="post" class="ms-2">
-    <button class="btn btn-sm btn-outline-primary">ทำเป็นอ่านแล้ว</button>
-  </form>
-</h4>
-
-<div class="collapse show" id="kidNotiBox">
-  <ul class="list-group mb-3">
-    {% for n in notis %}
-      <li class="list-group-item d-flex justify-content-between align-items-center">
-        <div>
-          <div class="small text-muted">{{ n.created_at }}</div>
-          {{ n.message }}
-        </div>
-        <span class="badge {{ 'bg-secondary' if n.is_read else 'bg-warning text-dark' }}">
-          {{ n.type }}
-        </span>
-      </li>
-    {% else %}
-      <li class="list-group-item text-muted">ยังไม่มีแจ้งเตือน</li>
-    {% endfor %}
-  </ul>
-</div>
-
-
-<h4 class="mt-3">ภารกิจของคุณ</h4>
-<div class="row">
-{% for t in tasks %}
-  <div class="col-md-4">
-    <div class="card shadow-sm mb-3">
-      <div class="card-body">
-        <h5 class="card-title">{{ t.title }}
-          <span class="badge bg-secondary">{{ t.points }} pts</span>
-        </h5>
-        <form action="/kid/submit/{{ t.id }}" method="post" enctype="multipart/form-data">
-          <input type="hidden" name="kid_id" value="{{ kid.id }}">
-          <div class="mb-2"><textarea name="message" class="form-control" placeholder="ข้อความแนบ (ถ้ามี)"></textarea></div>
-          <div class="mb-2"><input name="file" type="file" class="form-control"></div>
-          <button class="btn btn-success btn-sm w-100">ส่งงาน</button>
-        </form>
+  {% if not_in_family %}
+    <p style="margin-top:8px;">เข้าร่วมครอบครัวด้วยโค้ดจากผู้ปกครอง</p>
+    <form method="post" action="/kid/join" style="display:grid; gap:12px; margin-top:10px;">
+      <input type="hidden" name="kid_id" value="{{ kid.id }}">
+      <div>
+        <label>Family Code</label>
+        <input name="code" placeholder="เช่น FAM-12AB9F" required style="width:100%; padding:8px;">
       </div>
-    </div>
-  </div>
-{% endfor %}
-</div>
+      <button class="btn" type="submit">เข้าร่วม</button>
+    </form>
+  {% else %}
+    <p>คุณอยู่ในครอบครัวแล้ว เยี่ยม</p>
+  {% endif %}
 
-<h4 class="mt-4">แลกรางวัล</h4>
-<div class="row">
-{% for r in rewards %}
-  <div class="col-md-3">
-    <div class="card h-100 shadow-sm mb-3">
-      {% if r.image_path %}<img src="/{{ r.image_path }}" class="card-img-top" style="height:150px;object-fit:cover;">{% endif %}
-      <div class="card-body text-center">
-        <h6>{{ r.name }}</h6>
-        <p class="text-muted">{{ r.description }}</p>
-        <p><b>{{ r.cost }}</b> pts</p>
-        <form action="/kid/reward/redeem/{{ r.id }}" method="post">
-          <input type="hidden" name="kid_id" value="{{ kid.id }}">
-          <button class="btn btn-outline-primary btn-sm w-100">ส่งคำขอแลก</button>
-        </form>
-      </div>
-    </div>
+  <div style="margin-top:16px;">
+    <a class="btn" href="/login">ออกจากระบบ</a>
   </div>
-{% endfor %}
 </div>
 {% endblock %}

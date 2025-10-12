@@ -1,25 +1,16 @@
-from fastapi import FastAPI, Request
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
+from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from config import Base, engine
+from routes.auth_page import router as auth_router
 
-from tables import users, tasks, submissions, rewards
-from tables import families
-from tables import notifications, reward_redeems, logs
-
-from routes.pages import auth_page, parent_page, kid_page
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Parent–Kid ToDoList v9 + Notifications + Logs")
-
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
-
-app.include_router(auth_page.router)
-app.include_router(parent_page.router)
-app.include_router(kid_page.router)
+app = FastAPI(title="Family Task Manager - Minimal+Family")
 
 @app.get("/")
-def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request, "role": None})
+def root():
+    return RedirectResponse("/login", status_code=307)
+
+app.include_router(auth_router)
+

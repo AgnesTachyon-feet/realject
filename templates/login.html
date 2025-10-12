@@ -1,18 +1,24 @@
 {% extends "base.html" %}
+{% block title %}เข้าสู่ระบบ{% endblock %}
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-4">
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <h4 class="mb-3">เข้าสู่ระบบ</h4>
-        <form action="/login" method="post">
-          <div class="mb-3"><input name="username" class="form-control" placeholder="Username"></div>
-          <div class="mb-3"><input name="password" type="password" class="form-control" placeholder="Password"></div>
-          <button class="btn btn-success w-100">Login</button>
-        </form>
-        {% if error %}<div class="alert alert-danger mt-3">{{ error }}</div>{% endif %}
-      </div>
+<div class="card">
+  <h2 style="text-align:center;">เข้าสู่ระบบ</h2>
+  {% if error %}
+    <p style="color:red; text-align:center;">{{ error }}</p>
+  {% endif %}
+  <form method="post" action="/login" style="display:grid; gap:1rem;">
+    <div>
+      <label>ชื่อผู้ใช้</label>
+      <input name="username" required style="width:100%; padding:8px;">
     </div>
-  </div>
+    <div>
+      <label>รหัสผ่าน</label>
+      <input type="password" name="password" required style="width:100%; padding:8px;">
+    </div>
+    <button class="btn" type="submit">เข้าสู่ระบบ</button>
+  </form>
+  <p style="text-align:center; margin-top:1rem;">
+    ยังไม่มีบัญชี? <a href="/register">สมัครสมาชิก</a>
+  </p>
 </div>
 {% endblock %}

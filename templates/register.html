@@ -1,26 +1,35 @@
 {% extends "base.html" %}
+{% block title %}สมัครสมาชิก{% endblock %}
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-6">
-    <div class="card shadow-sm">
-      <div class="card-body">
-        <h4 class="card-title mb-3">สมัครสมาชิก</h4>
-        <form action="/register" method="post">
-          <div class="mb-3"><label class="form-label">Username</label><input name="username" class="form-control" required></div>
-          <div class="mb-3"><label class="form-label">Email</label><input name="email" type="email" class="form-control" required></div>
-          <div class="mb-3"><label class="form-label">Password</label><input name="password" type="password" class="form-control" required></div>
-          <div class="mb-3">
-            <label class="form-label">Role</label>
-            <select name="role" class="form-select">
-              <option value="parent">Parent</option>
-              <option value="kid">Kid</option>
-            </select>
-          </div>
-          <button type="submit" class="btn btn-primary w-100">สมัคร</button>
-        </form>
-        {% if error %}<div class="alert alert-danger mt-3">{{ error }}</div>{% endif %}
-      </div>
+<div class="card">
+  <h2 style="text-align:center;">สมัครสมาชิก</h2>
+  {% if error %}
+    <p style="color:red; text-align:center;">{{ error }}</p>
+  {% endif %}
+  <form method="post" action="/register" style="display:grid; gap:1rem;">
+    <div>
+      <label>ชื่อผู้ใช้</label>
+      <input name="username" required style="width:100%; padding:8px;">
     </div>
-  </div>
+    <div>
+      <label>รหัสผ่าน</label>
+      <input type="password" name="password" required style="width:100%; padding:8px;">
+    </div>
+    <div>
+      <label>ชื่อจริง</label>
+      <input name="first_name" required style="width:100%; padding:8px;">
+    </div>
+    <div>
+      <label>บทบาท</label>
+      <select name="role" required style="width:100%; padding:8px;">
+        <option value="parent">Parent</option>
+        <option value="kid">Kid</option>
+      </select>
+    </div>
+    <button class="btn" type="submit">สมัคร</button>
+  </form>
+  <p style="text-align:center; margin-top:1rem;">
+    มีบัญชีแล้ว? <a href="/login">เข้าสู่ระบบ</a>
+  </p>
 </div>
 {% endblock %}

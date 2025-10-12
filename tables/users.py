@@ -1,18 +1,24 @@
-from sqlalchemy import Column, Integer, String, Enum, DateTime
-from datetime import datetime
-import enum
+from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy.dialects.postgresql import ENUM as PGEnum
 from config import Base
+import enum
+import datetime
 
-class RoleEnum(str, enum.Enum):
+class RoleEnum(enum.Enum):
     kid = "kid"
     parent = "parent"
 
 class Users(Base):
-    __tablename__ = "users"
-    id = Column(Integer, primary_key=True)
-    username = Column(String, unique=True, nullable=False)
-    email = Column(String, unique=True, nullable=False)
+    __tablename__ = 'users'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String, nullable=False, unique=True)
     password = Column(String, nullable=False)
-    role = Column(Enum(RoleEnum), nullable=False)
-    points = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    first_name = Column(String, nullable=False)
+    role = Column(
+        PGEnum(RoleEnum, name="role_enum", create_type=True, validate_strings=True),
+        nullable=False
+    )
+
+    create_date = Column(DateTime, default=datetime.datetime.utcnow)
+    update_date = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
