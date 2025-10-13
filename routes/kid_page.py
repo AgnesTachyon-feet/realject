@@ -1,46 +1,33 @@
-from fastapi import APIRouter, Request, Form, Depends
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Request, Depends, Form
+from fastapi.responses import RedirectResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from config import get_db, templates
-from tables.users import Users
-from tables.families import Family, FamilyMember
+from tables.users import Users, RoleEnum
+from tables.families import FamilyMember, Family
+from utils.family import join_family
 
-router = APIRouter(tags=["Kid Pages"], prefix="/kid")
+router = APIRouter(prefix="/kid", tags=["Kid Pages"])
 
-def _kid_in_family(db: Session, kid_id: int):
-    link = db.query(FamilyMember).filter(FamilyMember.user_id == kid_id, FamilyMember.role == "kid").first()
-    return bool(link)
-
-@router.get("/dashboard/{kid_id}")
+@router.get("/dashboard/{kid_id}", response_class=HTMLResponse)
 def dashboard_kid(request: Request, kid_id: int, db: Session = Depends(get_db)):
-    kid = db.query(Users).get(kid_id)
-    if not kid or kid.role != "kid":
+    kid = db.get(Users, kid_id)
+    if not kid or getattr(kid.role, "value", str(kid.role)) != "kid":
         return RedirectResponse("/login", status_code=303)
 
-    in_family = _kid_in_family(db, kid_id)
+    member = db.query(FamilyMember).filter(FamilyMember.user_id == kid_id).first()
+    family = db.get(Family, member.family_id) if member else None
 
     return templates.TemplateResponse("dashboard_kid.html", {
         "request": request,
         "kid": kid,
-        "not_in_family": not in_family
+        "in_family": bool(member),
+        "family_name": family.name if family else None
     })
 
 @router.post("/join")
-def kid_join_family(kid_id: int = Form(...), code: str = Form(...), db: Session = Depends(get_db)):
-    kid = db.query(Users).get(kid_id)
-    if not kid or kid.role != "kid":
-        return RedirectResponse("/login", status_code=303)
-
-    fam = db.query(Family).filter(Family.code == code.strip()).first()
-    if not fam:
-        return RedirectResponse(f"/kid/dashboard/{kid_id}", status_code=303)
-
-    exists = db.query(FamilyMember).filter(
-        FamilyMember.family_id == fam.id,
-        FamilyMember.user_id == kid_id
-    ).first()
-    if not exists:
-        db.add(FamilyMember(family_id=fam.id, user_id=kid_id, role="kid"))
-        db.commit()
-
-    return RedirectResponse(f"/kid/dashboard/{kid_id}", status_code=303)
+def kid_join(kid_id: int = Form(...), code: str = Form(...), db: Session = Depends(get_db)):
+    try:
+        join_family(db, kid_id=kid_id, code=code)
+        return RedirectResponse(f"/kid/dashboard/{kid_id}?ok=joined", status_code=303)
+    except ValueError:
+        return RedirectResponse(f"/kid/dashboard/{kid_id}?err=invalid_code", status_code=303)

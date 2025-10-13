@@ -12,9 +12,9 @@ class Users(Base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    username = Column(String, nullable=False, unique=True)
+    username = Column(String(50), nullable=False, unique=True)
     password = Column(String, nullable=False)
-    first_name = Column(String, nullable=False)
+    first_name = Column(String(50), nullable=False)
     role = Column(
         PGEnum(RoleEnum, name="role_enum", create_type=True, validate_strings=True),
         nullable=False

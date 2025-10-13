@@ -1,55 +1,55 @@
 from fastapi import APIRouter, Request, Form, Depends
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse,HTMLResponse
 from sqlalchemy.orm import Session
-from config import get_db, templates
-from tables.users import Users
-from tables.families import Family, FamilyMember
-import secrets
+from config import get_db,templates
+from tables.users import Users, RoleEnum
+from utils.family import create_family
+from tables.families import Family
 
-router = APIRouter(tags=["Parent Pages"], prefix="/parent")
-
-def _find_family_by_parent(db: Session, pid: int):
-    fam = db.query(Family).filter(Family.owner_parent_id == pid).first()
-    if fam:
-        return fam
-    link = db.query(FamilyMember).filter(FamilyMember.user_id == pid, FamilyMember.role == "parent").first()
-    if link:
-        return db.query(Family).get(link.family_id)
-    return None
-
-def _gen_code():
-    return "FAM-" + secrets.token_hex(3).upper()
+router = APIRouter(prefix="/parent", tags=["Parent Pages"])
 
 @router.get("/dashboard/{pid}")
-def dashboard_parent(request: Request, pid: int, db: Session = Depends(get_db)):
-    parent = db.query(Users).get(pid)
-    if not parent or parent.role != "parent":
+def dashboard_parent(pid: int, request: Request, db: Session = Depends(get_db)):
+
+    parent = db.get(Users, pid)
+    if not parent:
         return RedirectResponse("/login", status_code=303)
 
-    fam = _find_family_by_parent(db, pid)
+    fam = db.query(Family).filter(Family.owner_parent_id == pid).first()
     family_code = fam.code if fam else None
 
-    return templates.TemplateResponse("dashboard_parent.html", {
-        "request": request,
-        "parent": parent,
-        "family_code": family_code,
-        "pid": pid
-    })
+    return templates.TemplateResponse(
+        "dashboard_parent.html",
+        {
+            "request": request,
+            "parent": parent,
+            "pid": pid,
+            "family_code": family_code,
+        },
+    )
 
-@router.post("/family/create")
-def create_family(pid: int = Form(...), name: str = Form(...), db: Session = Depends(get_db)):
-    parent = db.query(Users).get(pid)
-    if not parent or parent.role != "parent":
+@router.post("/{pid}/family/create")
+def create_family_route(
+    pid: int,
+    family_name: str = Form(...),
+    db: Session = Depends(get_db),
+):
+
+    parent = db.get(Users, pid)
+    if not parent or parent.role != RoleEnum.parent:
         return RedirectResponse("/login", status_code=303)
+    n = (family_name or "").strip()
+    if not (1 <= len(n) <= 80):
+        return RedirectResponse(f"/parent/dashboard/{pid}?err=bad_name", status_code=303)
 
-    fam_exists = _find_family_by_parent(db, pid)
-    if fam_exists:
-        return RedirectResponse(f"/parent/dashboard/{pid}", status_code=303)
+    existing = db.query(Family).filter(Family.owner_parent_id == pid).first()
+    if existing:
+        return RedirectResponse(
+            f"/parent/dashboard/{pid}?ok=already_have&code={existing.code}", status_code=303
+        )
 
-    code = _gen_code()
-    fam = Family(name=name, code=code, owner_parent_id=pid)
-    db.add(fam); db.commit(); db.refresh(fam)
-
-    db.add(FamilyMember(family_id=fam.id, user_id=pid, role="parent"))
-    db.commit()
-    return RedirectResponse(f"/parent/dashboard/{pid}", status_code=303)
+    fam = create_family(db, parent_id=pid, family_name=n)
+    return RedirectResponse(
+        url=f"/parent/dashboard/{pid}?ok=family_created&code={fam.code}",
+        status_code=303
+    )
