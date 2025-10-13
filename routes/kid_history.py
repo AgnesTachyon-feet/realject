@@ -19,7 +19,7 @@ def kid_history_page(kid_id: int, request: Request, db: Session = Depends(get_db
     tasks_done = (
         db.query(Task)
           .filter(Task.kid_id == kid_id, Task.status == TaskStatus.approved)
-          .order_by(desc(Task.completed_at.nullslast()), desc(Task.created_at))
+          .order_by(Task.completed_at.desc().nullslast(), Task.created_at.desc())
           .all()
     )
 
@@ -27,7 +27,7 @@ def kid_history_page(kid_id: int, request: Request, db: Session = Depends(get_db
         db.query(RewardRedeem, Reward)
           .join(Reward, Reward.id == RewardRedeem.reward_id)
           .filter(RewardRedeem.kid_id == kid_id, RewardRedeem.status == RedeemStatus.approved)
-          .order_by(desc(RewardRedeem.reviewed_at.nullslast()), desc(RewardRedeem.created_at))
+          .order_by(RewardRedeem.reviewed_at.desc().nullslast(), RewardRedeem.created_at.desc())
           .all()
     )
 

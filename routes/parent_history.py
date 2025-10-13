@@ -18,7 +18,7 @@ def parent_history_page(pid: int, request: Request, db: Session = Depends(get_db
     tasks_done = (
         db.query(Task)
           .filter(Task.parent_id == pid, Task.status.in_([TaskStatus.approved, TaskStatus.rejected]))
-          .order_by(desc(Task.completed_at.nullslast()), desc(Task.created_at))
+          .order_by(Task.completed_at.desc().nullslast(), Task.created_at.desc())
           .all()
     )
 
