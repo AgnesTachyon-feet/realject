@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum, Index
 from datetime import datetime
 import enum
-from config import Base
+from config import Base, now_th
 
 class TaskStatus(str, enum.Enum):
     assigned = "assigned"
@@ -18,6 +18,6 @@ class Task(Base):
     parent_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     kid_id    = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     status = Column(Enum(TaskStatus), nullable=False, default=TaskStatus.assigned)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    completed_at = Column(DateTime, nullable=True, index=True)
+    created_at = Column(DateTime(timezone=True), default=now_th)
+    completed_at = Column(DateTime(timezone=True), nullable=True, index=True)
     __table_args__ = (Index("ix_task_kid_status", "kid_id", "status"),)

@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.dialects.postgresql import ENUM as PGEnum
-from config import Base
+from config import Base, now_th
 import enum, datetime
 
 class RoleEnum(enum.Enum):
@@ -15,5 +15,5 @@ class Users(Base):
     first_name = Column(String, nullable=False)
     role = Column(PGEnum(RoleEnum, name="role_enum", create_type=True, validate_strings=True), nullable=False)
     points = Column(Integer, nullable=False, default=0)
-    create_date = Column(DateTime, default=datetime.datetime.utcnow)
-    update_date = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    create_date = Column(DateTime(timezone=True), default=now_th)
+    update_date = Column(DateTime(timezone=True), default=now_th, onupdate=now_th)

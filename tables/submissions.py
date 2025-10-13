@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Enum
 from datetime import datetime
 import enum
-from config import Base
+from config import Base, now_th
 
 class SubmissionStatus(str, enum.Enum):
     pending = "pending"
@@ -16,5 +16,5 @@ class Submission(Base):
     message = Column(Text)
     evidence_path = Column(String)
     status = Column(Enum(SubmissionStatus), nullable=False, default=SubmissionStatus.pending)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    reviewed_at = Column(DateTime)
+    created_at = Column(DateTime(timezone=True), default=now_th)
+    reviewed_at = Column(DateTime(timezone=True), nullable=True)

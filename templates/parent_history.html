@@ -25,8 +25,8 @@
               <td>{{ it.title }}</td>
               <td class="text-center">{{ it.points }}</td>
               <td class="text-center">{{ it.status }}</td>
-              <td>{{ it.created_at }}</td>
-              <td>{{ it.completed_at }}</td>
+              <td>{{ it.created_at|th_datetime }}</td>
+              <td>{{ it.completed_at|th_datetime }}</td>
             </tr>
           {% endfor %}
         </tbody>

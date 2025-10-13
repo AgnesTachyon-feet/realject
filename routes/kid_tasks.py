@@ -44,7 +44,7 @@ def submit_task(kid_id: int, task_id: int, message: str = Form(""), file: Upload
 def list_rewards(kid_id: int, db: Session = Depends(get_db)):
     fam = db.query(FamilyMember).filter(FamilyMember.user_id == kid_id).first()
     if not fam: return {"rewards": []}
-    rewards = db.query(Reward).all()  # MVP: เอาของในบ้านเดียวกันค่อยปรับทีหลัง
+    rewards = db.query(Reward).all()
     return {"rewards": [{"id": r.id, "name": r.name, "cost": r.cost} for r in rewards]}
 
 @router.post("/{kid_id}/redeem/{reward_id}")

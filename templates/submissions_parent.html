@@ -16,7 +16,7 @@
             <div style="min-width:260px;">
               <div style="font-weight:800">{{ it.task_title }}</div>
               <div style="color:#666;font-size:0.9rem">
-                จาก: <b>{{ it.kid_name }}</b> · คะแนนงาน: <b>{{ it.task_points }}</b> · ส่งเมื่อ {{ it.submitted_at }}
+                จาก: <b>{{ it.kid_name }}</b> · คะแนนงาน: <b>{{ it.task_points }}</b> · ส่งเมื่อ {{ it.submitted_at|th_datetime }}
               </div>
               {% if it.message %}
                 <div style="margin-top:8px;">ข้อความจากเด็ก: <div class="pill" style="background:#fff;border:1px dashed #ccc">{{ it.message }}</div></div>

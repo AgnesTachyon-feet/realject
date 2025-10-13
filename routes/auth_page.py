@@ -61,7 +61,6 @@ def register_user(
             {"request": request, "error": "ชื่อผู้ใช้นี้ถูกใช้แล้ว"},
         )
 
-    # ✅ ใช้ hash จาก core/auth.py
     hashed_pw = hash_password(password)
 
     new_user = Users(

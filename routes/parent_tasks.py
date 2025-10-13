@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Form
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-from config import get_db
+from config import get_db, now_th
 from tables.tasks import Task, TaskStatus
 from tables.submissions import Submission, SubmissionStatus
 from tables.rewards import Reward
@@ -31,9 +31,9 @@ def decide_submission(pid: int, sid: int, approve: str = Form(...), db: Session 
         sub.status = SubmissionStatus.approved; task.status = TaskStatus.approved
     else:
         sub.status = SubmissionStatus.rejected; task.status = TaskStatus.rejected
-    sub.reviewed_at = datetime.utcnow()
+    sub.reviewed_at = now_th()
     db.commit()
-    db.delete(sub); db.commit()  # กันส่งซ้ำ
+    db.delete(sub); db.commit()
     return RedirectResponse(f"/parent/dashboard/{pid}?ok=reviewed", status_code=303)
 
 @router.post("/{pid}/reward/add")
@@ -48,6 +48,6 @@ def decide_redeem(pid: int, rid: int, approve: str = Form(...), db: Session = De
     rr = db.get(RewardRedeem, rid)
     if not rr: return RedirectResponse(f"/parent/dashboard/{pid}", status_code=303)
     rr.status = RedeemStatus.approved if approve == "yes" else RedeemStatus.rejected
-    rr.reviewed_at = datetime.utcnow()
+    rr.reviewed_at = now_th()
     db.commit()
     return RedirectResponse(f"/parent/dashboard/{pid}?ok=redeem_reviewed", status_code=303)

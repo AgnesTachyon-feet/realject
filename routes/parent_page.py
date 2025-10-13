@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Form, Depends, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse
 from sqlalchemy.orm import Session
-from config import get_db, templates
+from config import get_db, templates, now_th
 from tables.users import Users, RoleEnum
 from tables.families import Family, FamilyMember
 from tables.rewards import Reward
@@ -111,7 +111,7 @@ def decide_submission(
     if approve == "yes":
         if kid:
             kid.points = (kid.points or 0) + (task.points or 0)
-            task.completed_at = datetime.datetime.utcnow() 
+            task.completed_at = now_th()
             toast("อนุมัติงานแล้ว ✅", f"เด็กได้รับแต้ม {task.points} จาก {task.title}")
             sub.status = "approved"
             task.status = TaskStatus.approved
@@ -120,7 +120,7 @@ def decide_submission(
         task.completed_at = None
         toast("ปฏิเสธงานแล้ว ❌", f"ภารกิจ {task.title} ถูกปฏิเสธ")
         sub.status = "rejected"
-        sub.reviewed_at = datetime.datetime.utcnow()
+        sub.reviewed_at = now_th()
     db.delete(sub)
     db.commit()
 
