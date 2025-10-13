@@ -136,7 +136,7 @@ def _save_file(file: UploadFile):
     return path
 
 
-@router.post("/submit/{task_id}")
+@router.post("/submit/{task_id}", name="kid_submit_task")
 def submit_task(task_id: int,
                 kid_id: int = Form(...),
                 note: str = Form(""),
