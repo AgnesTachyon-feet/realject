@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from config import Base, engine
-
+from fastapi.responses import RedirectResponse
 from routes.auth_page import router as auth_router
 from routes.parent_page import router as parent_router
 from routes.kid_page import router as kid_router
@@ -23,5 +23,5 @@ Base.metadata.create_all(bind=engine)
 
 @app.get("/", include_in_schema=False)
 def root():
-    from fastapi.responses import RedirectResponse
+
     return RedirectResponse("/login", status_code=307)

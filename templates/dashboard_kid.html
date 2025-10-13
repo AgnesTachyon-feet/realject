@@ -1,26 +1,140 @@
 {% extends "base.html" %}
 {% block title %}Kid Dashboard{% endblock %}
+
 {% block content %}
-<div class="card" style="max-width:400px;margin:40px auto;text-align:center;padding:24px;border-radius:12px;box-shadow:0 0 10px rgba(0,0,0,0.08);">
-  <h2>สวัสดี {{ kid.first_name }}</h2>
+
+<div class="card" style="max-width:860px;margin:auto;">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+    <h2 style="margin:0;">สวัสดี {{ kid.first_name }}! 👋</h2>
+    <div style="font-weight:700;">⭐ แต้มของคุณ: <span style="font-size:1.1rem">{{ kid.points or 0 }}</span></div>
+  </div>
 
   {% if not in_family %}
-    <p style="margin:10px 0 6px;">กรอกรหัสครอบครัวจาก Parent เพื่อเข้าร่วม</p>
-    <form method="post" action="/kid/join" style="display:grid;gap:10px;">
+    <hr>
+    <div style="text-align:center;margin-bottom:6px;">ยังไม่ได้เข้าร่วมครอบครัว</div>
+    <form method="post" action="/kid/join-family" style="display:grid;gap:10px;max-width:520px;margin:0 auto;">
       <input type="hidden" name="kid_id" value="{{ kid.id }}">
-      <input name="code" placeholder="เช่น FAM-A1B2C3" required style="padding:8px;border:1px solid #ccc;border-radius:6px;">
-      <button class="btn" type="submit" style="background:#000;color:#fff;border:none;padding:10px;border-radius:6px;cursor:pointer;">เข้าร่วม</button>
+      <label>รหัสครอบครัว</label>
+      <input name="family_code" placeholder="เช่น FAM-12AB9F" required>
+      <button class="btn" type="submit">เข้าร่วมครอบครัว</button>
     </form>
-    {% if request.query_params.get('err') == 'invalid_code' %}
-      <div class="alert alert-danger" style="margin-top:10px;">รหัสไม่ถูกต้อง</div>
-    {% endif %}
+    <div style="margin-top:12px;text-align:center;color:#666">
+      *ขอรหัสจากผู้ปกครองก่อนนะ
+    </div>
+    <hr>
   {% else %}
-    <p style="margin:10px 0;">คุณอยู่ในครอบครัว: <b>{{ family_name }}</b></p>
-    <!-- ตรงนี้ค่อยโชว์ tasks/rewards ได้ภายหลัง -->
+    {% if family_name %}
+      <div style="margin-top:8px;color:#666;">คุณอยู่ใน <b>{{ family_name }}</b></div>
+    {% endif %}
   {% endif %}
 
-  <div style="margin-top:16px;">
-    <a class="btn" href="/login" style="background:#f5f5f5;padding:8px 14px;border-radius:6px;text-decoration:none;color:#000;">ออกจากระบบ</a>
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:18px 0;">
+    <div class="pill" style="background:#fff7e6;border:1px solid #ffe7b8;">
+      <div style="font-size:0.9rem;color:#a56c00;">งานใหม่</div>
+      <div style="font-weight:800;font-size:1.3rem">{{ count_new or 0 }}</div>
+    </div>
+    <div class="pill" style="background:#eaf4ff;border:1px solid #cfe6ff;">
+      <div style="font-size:0.9rem;color:#0a5196;">รอตรวจ</div>
+      <div style="font-weight:800;font-size:1.3rem">{{ count_pending or 0 }}</div>
+    </div>
+    <div class="pill" style="background:#eaffef;border:1px solid #c2f0d2;">
+      <div style="font-size:0.9rem;color:#0e7a42;">เสร็จแล้ว</div>
+      <div style="font-weight:800;font-size:1.3rem">{{ count_done or 0 }}</div>
+    </div>
+  </div>
+
+  {% if in_family %}
+    <!-- แท็บง่าย ๆ -->
+    <div style="display:flex;gap:6px;justify-content:center;margin-bottom:12px;">
+      <a href="#tasks" class="btn" onclick="showPane('pane-tasks');return false;">ภารกิจของฉัน</a>
+      <a href="#rewards" class="btn" onclick="showPane('pane-rewards');return false;">ของรางวัล</a>
+    </div>
+
+    <!-- ภารกิจของฉัน -->
+    <div id="pane-tasks">
+      {% if tasks and tasks|length > 0 %}
+        <div style="display:grid;gap:12px;">
+          {% for t in tasks %}
+            <div class="pill" style="text-align:left">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                <div>
+                  <div style="font-weight:700">{{ t.title }}</div>
+                  <div style="color:#666;font-size:0.9rem">{{ t.description }}</div>
+                  <div style="margin-top:4px;color:#444;font-size:0.9rem">
+                    คะแนน: <b>{{ t.points }}</b> · สถานะ: <b>{{ t.status_display }}</b> · สร้างเมื่อ {{ t.created_at }}
+                  </div>
+                </div>
+                {% if t.status == 'assigned' or t.status == 'rejected' %}
+                  <div><span class="pill" style="background:#fff;border:1px dashed #999;">ส่งได้</span></div>
+                {% elif t.status == 'submitted' %}
+                  <div><span class="pill" style="background:#eaf4ff;border:1px solid #cfe6ff;">รอตรวจ</span></div>
+                {% elif t.status == 'done' %}
+                  <div><span class="pill" style="background:#eaffef;border:1px solid #c2f0d2;">เสร็จแล้ว</span></div>
+                {% endif %}
+              </div>
+
+              {% if t.status in ['assigned','rejected'] %}
+                <form method="post" action="/kid/submit/{{ t.id }}" enctype="multipart/form-data"
+                      style="display:grid;gap:8px;margin-top:10px;">
+                  <input type="hidden" name="kid_id" value="{{ kid.id }}">
+                  <label>ข้อความแนบ (ถ้ามี)</label>
+                  <textarea name="note" rows="2" placeholder="เล่าให้ผู้ปกครองอ่านสักหน่อย…"></textarea>
+
+                  <label>รูป/ไฟล์หลักฐาน (ไม่บังคับ)</label>
+                  <input type="file" name="evidence">
+
+                  <button class="btn" type="submit">📤 ส่งงาน</button>
+                </form>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty">ยังไม่มีงานในตอนนี้</div>
+      {% endif %}
+    </div>
+
+    <!-- ของรางวัล -->
+    <div id="pane-rewards" style="display:none;">
+      {% if rewards and rewards|length > 0 %}
+        <div style="display:grid;gap:12px;">
+          {% for r in rewards %}
+            <div class="pill" style="text-align:left">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                <div>
+                  <div style="font-weight:700">{{ r.name }}</div>
+                  <div style="color:#666;font-size:0.9rem">{{ r.description }}</div>
+                  <div style="margin-top:4px;color:#444;font-size:0.9rem">
+                    ราคาแลก: <b>{{ r.cost }}</b> แต้ม
+                    {% if r.remaining is not none %}
+                      · คงเหลือ: <b>{{ r.remaining }}</b>
+                    {% endif %}
+                  </div>
+                </div>
+                <form method="post" action="/kid/redeem/{{ r.id }}" style="margin:0;">
+                  <input type="hidden" name="kid_id" value="{{ kid.id }}">
+                  <button class="btn" type="submit">🛒 แลกเลย!</button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty">ยังไม่มีของรางวัลให้แลก</div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  <div style="margin-top:18px;text-align:center;">
+    <a class="btn" href="/login">ออกจากระบบ</a>
   </div>
 </div>
+
+<script>
+  function showPane(id) {
+    document.getElementById('pane-tasks').style.display = (id === 'pane-tasks') ? '' : 'none';
+    document.getElementById('pane-rewards').style.display = (id === 'pane-rewards') ? '' : 'none';
+  }
+</script>
+
 {% endblock %}

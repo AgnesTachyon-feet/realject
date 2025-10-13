@@ -1,59 +1,77 @@
 from fastapi import APIRouter, Request, Form, Depends
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
-from config import get_db, templates
-from tables.users import Users
+from config import get_db
+from fastapi.templating import Jinja2Templates
+from tables.users import Users, RoleEnum
 from core.auth import hash_password, verify_password
 
-router = APIRouter(tags=["Auth Pages"])
+templates = Jinja2Templates(directory="templates")
+router = APIRouter(tags=["Auth"])
 
 @router.get("/login")
 def login_page(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
+
 @router.post("/login")
-def login_submit(
+def login_post(
     request: Request,
     username: str = Form(...),
     password: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     user = db.query(Users).filter(Users.username == username).first()
-    if not user or not verify_password(password, user.password):
+
+    if not user:
         return templates.TemplateResponse(
             "login.html", {"request": request, "error": "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"}
         )
-    if user.role == "parent":
-        return templates.TemplateResponse("dashboard_parent.html", {"request": request, "parent": user})
+
+    if not verify_password(password, user.password):
+        return templates.TemplateResponse(
+            "login.html", {"request": request, "error": "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง"}
+        )
+
+    if user.role == RoleEnum.kid:
+        return RedirectResponse(f"/kid/dashboard/{user.id}", status_code=303)
+    elif user.role == RoleEnum.parent:
+        return RedirectResponse(f"/parent/dashboard/{user.id}", status_code=303)
     else:
-        return templates.TemplateResponse("dashboard_kid.html", {"request": request, "kid": user})
+        return RedirectResponse("/login", status_code=303)
 
 @router.get("/register")
 def register_page(request: Request):
     return templates.TemplateResponse("register.html", {"request": request})
 
+
 @router.post("/register")
-def register_submit(
+def register_user(
     request: Request,
     username: str = Form(...),
     password: str = Form(...),
     first_name: str = Form(...),
     role: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    if db.query(Users).filter(Users.username == username).first():
+    existing = db.query(Users).filter(Users.username == username).first()
+    if existing:
         return templates.TemplateResponse(
-            "register.html", {"request": request, "error": "มีชื่อผู้ใช้นี้แล้ว"}
+            "register.html",
+            {"request": request, "error": "ชื่อผู้ใช้นี้ถูกใช้แล้ว"},
         )
-    user = Users(
+
+    # ✅ ใช้ hash จาก core/auth.py
+    hashed_pw = hash_password(password)
+
+    new_user = Users(
         username=username,
-        password=hash_password(password),
+        password=hashed_pw,
         first_name=first_name,
-        role=role
+        role=RoleEnum(role),
     )
-    db.add(user)
+    db.add(new_user)
     db.commit()
-    db.refresh(user)
-    if role == "parent":
-        return templates.TemplateResponse("dashboard_parent.html", {"request": request, "parent": user})
-    else:
-        return templates.TemplateResponse("dashboard_kid.html", {"request": request, "kid": user})
+    db.refresh(new_user)
+
+    return RedirectResponse("/login", status_code=303)
