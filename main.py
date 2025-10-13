@@ -6,6 +6,8 @@ from config import Base, engine
 from routes.auth_page import router as auth_router
 from routes.parent_page import router as parent_router
 from routes.kid_page import router as kid_router
+from routes.parent_tasks import router as parent_tasks_router
+from routes.kid_tasks import router as kid_tasks_router
 
 app = FastAPI()
 
@@ -14,6 +16,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(auth_router)
 app.include_router(parent_router)
 app.include_router(kid_router)
+app.include_router(parent_tasks_router)
+app.include_router(kid_tasks_router)
 
 Base.metadata.create_all(bind=engine)
 
