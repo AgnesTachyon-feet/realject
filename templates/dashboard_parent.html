@@ -95,8 +95,10 @@
     </div>
 
     <div class="hr"></div>
-    <a class="btn btn-secondary" href="{{ request.url_for('parent_redeems_page', pid=pid) }}">ตรวจคำขอแลกรางวัล</a>
-
+    <a class="btn btn-secondary mb-2" href="{{ request.url_for('parent_redeems_page', pid=pid) }}">ตรวจคำขอแลกรางวัล</a>
+    <hr>
+    <a class="btn btn-outline-primary mb-2" href="{{ request.url_for('parent_history_page', pid=pid) }}">ประวัติการตรวจงาน</a>
+    <hr>
     {# ---------- Create Reward ---------- #}
     <div class="section">
       <h3>เพิ่มของรางวัล</h3>

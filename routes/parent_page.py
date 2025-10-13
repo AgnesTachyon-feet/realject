@@ -111,16 +111,16 @@ def decide_submission(
     if approve == "yes":
         if kid:
             kid.points = (kid.points or 0) + (task.points or 0)
-        task.status = TaskStatus.approved
-        sub.status = "approved"
-        toast("อนุมัติงานแล้ว ✅", f"เด็กได้รับแต้ม {task.points} จาก {task.title}")
+            task.completed_at = datetime.datetime.utcnow() 
+            toast("อนุมัติงานแล้ว ✅", f"เด็กได้รับแต้ม {task.points} จาก {task.title}")
+            sub.status = "approved"
+            task.status = TaskStatus.approved
     else:
         task.status = TaskStatus.rejected
-        sub.status = "rejected"
+        task.completed_at = None
         toast("ปฏิเสธงานแล้ว ❌", f"ภารกิจ {task.title} ถูกปฏิเสธ")
-
-    sub.reviewed_at = datetime.datetime.utcnow()
-
+        sub.status = "rejected"
+        sub.reviewed_at = datetime.datetime.utcnow()
     db.delete(sub)
     db.commit()
 

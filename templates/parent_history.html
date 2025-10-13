@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}ประวัติการตรวจงาน{% endblock %}
+{% block content %}
+<div class="container mt-4" style="max-width:960px;">
+  <div class="d-flex justify-content-between align-items-center">
+    <h2 class="mb-0">ประวัติการตรวจงาน</h2>
+    <a class="btn btn-outline-secondary" href="/parent/dashboard/{{ pid }}">← กลับแดชบอร์ด</a>
+  </div>
+
+  {% if items and items|length > 0 %}
+    <div class="table-responsive mt-3">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>ชื่องาน</th>
+            <th class="text-center">แต้ม</th>
+            <th class="text-center">สถานะ</th>
+            <th>ส่งเมื่อ</th>
+            <th>ตรวจเมื่อ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for it in items %}
+            <tr>
+              <td>{{ it.title }}</td>
+              <td class="text-center">{{ it.points }}</td>
+              <td class="text-center">{{ it.status }}</td>
+              <td>{{ it.created_at }}</td>
+              <td>{{ it.completed_at }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-light mt-3">ยังไม่มีประวัติ</div>
+  {% endif %}
+</div>
+{% endblock %}

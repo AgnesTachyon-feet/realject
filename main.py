@@ -8,6 +8,8 @@ from routes.parent_page import router as parent_router
 from routes.kid_page import router as kid_router
 from routes.parent_tasks import router as parent_tasks_router
 from routes.kid_tasks import router as kid_tasks_router
+from routes.parent_history import router as parent_history_router
+from routes.kid_history import router as kid_history_router
 
 app = FastAPI()
 
@@ -18,6 +20,8 @@ app.include_router(parent_router)
 app.include_router(kid_router)
 app.include_router(parent_tasks_router)
 app.include_router(kid_tasks_router)
+app.include_router(parent_history_router)
+app.include_router(kid_history_router)
 
 Base.metadata.create_all(bind=engine)
 

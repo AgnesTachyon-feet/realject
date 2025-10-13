@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}ประวัติของฉัน{% endblock %}
+{% block content %}
+<div class="container mt-4" style="max-width:960px;">
+  <div class="d-flex justify-content-between align-items-center">
+    <h2 class="mb-0">ประวัติของฉัน</h2>
+    <a class="btn btn-outline-secondary" href="/kid/dashboard/{{ kid.id }}">← กลับแดชบอร์ด</a>
+  </div>
+
+  <div class="mt-2 text-muted">แต้มปัจจุบัน: <b>{{ total_points }}</b></div>
+
+  <h5 class="mt-4">ภารกิจที่เสร็จแล้ว</h5>
+  {% if tasks and tasks|length > 0 %}
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>ชื่องาน</th>
+            <th class="text-center">แต้ม</th>
+            <th>เสร็จเมื่อ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in tasks %}
+            <tr>
+              <td>{{ t.title }}</td>
+              <td class="text-center">{{ t.points }}</td>
+              <td>{{ t.completed_at }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-light">ยังไม่มีภารกิจที่เสร็จ</div>
+  {% endif %}
+
+  <h5 class="mt-4">ของรางวัลที่แลกสำเร็จ</h5>
+  {% if redeems and redeems|length > 0 %}
+    <div class="table-responsive">
+      <table class="table table-sm align-middle">
+        <thead>
+          <tr>
+            <th>ของรางวัล</th>
+            <th class="text-center">แต้มที่ใช้</th>
+            <th>อนุมัติเมื่อ</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in redeems %}
+            <tr>
+              <td>{{ r.name }}</td>
+              <td class="text-center">{{ r.cost }}</td>
+              <td>{{ r.approved_at }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-light">ยังไม่มีรางวัลที่แลกสำเร็จ</div>
+  {% endif %}
+</div>
+{% endblock %}
