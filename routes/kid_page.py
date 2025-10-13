@@ -60,16 +60,14 @@ def dashboard_kid(kid_id: int, request: Request, db: Session = Depends(get_db)):
             Task.status.in_([
                 TaskStatus.assigned,
                 TaskStatus.rejected,
-                TaskStatus.submitted,
-                TaskStatus.approved
+                TaskStatus.submitted
             ])
         ).order_by(Task.created_at.desc()).all()
     else:
         task_list = []
-
-    count_new     = sum(1 for t in task_list if t.status == TaskStatus.assigned)
-    count_pending = sum(1 for t in task_list if t.status == TaskStatus.submitted)
-    count_done    = sum(1 for t in task_list if t.status == TaskStatus.approved)
+    count_new = db.query(Task).filter(Task.kid_id == kid_id, Task.status == TaskStatus.assigned).count()
+    count_pending = db.query(Task).filter(Task.kid_id == kid_id, Task.status == TaskStatus.submitted).count()
+    count_done = db.query(Task).filter(Task.kid_id == kid_id, Task.status == TaskStatus.approved).count()
 
     status_map = {
         TaskStatus.assigned: "งานใหม่",
