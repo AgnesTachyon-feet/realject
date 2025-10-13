@@ -1,11 +1,8 @@
-# routes/kid_page.py
 from fastapi import APIRouter, Request, Form, Depends, UploadFile, File
 from fastapi.responses import RedirectResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import select, exists
-from datetime import datetime
-import os, uuid, shutil
-
+import datetime, os, shutil, uuid
 from config import get_db, templates
 from tables.users import Users, RoleEnum
 from tables.tasks import Task, TaskStatus
@@ -14,26 +11,12 @@ from tables.rewards import Reward
 from tables.reward_redeems import RewardRedeem, RedeemStatus
 from tables.families import FamilyMember, Family
 from utils.family import join_family as join_family_util
+from core.notify import toast
 
 router = APIRouter(prefix="/kid", tags=["Kid Pages"])
 
-# === เพิ่ม helper เซฟไฟล์ (ถ้าอยากใช้ utils.files ก็เปลี่ยนตามคอมเมนต์ด้านล่าง) ===
-UPLOAD_DIR = "static/uploads/submissions"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-def _save_file(upload: UploadFile) -> str | None:
-    if not upload:
-        return None
-    filename = f"{uuid.uuid4().hex}_{upload.filename}"
-    path = os.path.join(UPLOAD_DIR, filename)
-    with open(path, "wb") as f:
-        shutil.copyfileobj(upload.file, f)
-    return path
-# ถ้าอยากใช้ไฟล์รวมแทน:
-# from utils.files import save_file
-# แล้วเปลี่ยนตอนใช้งานเป็น: path = save_file(evidence, subdir="submissions")
-
-@router.get("/dashboard/{kid_id}", response_class=HTMLResponse, name="kid_dashboard")
+@router.get("/dashboard/{kid_id}", response_class=HTMLResponse)
 def dashboard_kid(kid_id: int, request: Request, db: Session = Depends(get_db)):
     kid = db.get(Users, kid_id)
     if not kid or kid.role != RoleEnum.kid:
@@ -43,9 +26,7 @@ def dashboard_kid(kid_id: int, request: Request, db: Session = Depends(get_db)):
         select(exists().where(
             FamilyMember.user_id == kid_id,
             FamilyMember.family_id.isnot(None),
-            # ถ้า column role เป็น PGEnum(RoleEnum) ใช้แบบนี้:
             FamilyMember.role == RoleEnum.kid
-            # ถ้า column role เป็น String ค่อยใช้: FamilyMember.role == RoleEnum.kid.value
         ))
     ).scalar()
 
@@ -85,15 +66,41 @@ def dashboard_kid(kid_id: int, request: Request, db: Session = Depends(get_db)):
         "created_at": t.created_at.strftime("%d %b %Y %H:%M"),
     } for t in task_list]
 
-    rewards_list = db.query(Reward).all() if in_family else []
+    all_rewards = db.query(Reward).all() if in_family else []
+    redeems = db.query(RewardRedeem).filter(RewardRedeem.kid_id == kid_id).all()
+    taken_status = {r.reward_id: r.status for r in redeems}
+
+    rewards_list = []
+    for r in all_rewards:
+        st = taken_status.get(r.id)
+        if st in {RedeemStatus.pending, RedeemStatus.approved}:
+            continue
+        rewards_list.append(r)
+
     rewards_view = [{
-        "id": r.id, "name": r.name,
+        "id": r.id,
+        "name": r.name,
         "description": r.description or "",
         "cost": r.cost,
-        "remaining": getattr(r, "remaining", None)
+        "image_path": getattr(r, "image_path", None),
     } for r in rewards_list]
 
-    print(f"[kid_dashboard] kid_id={kid_id} in_family={in_family} tasks={len(tasks_view)}")
+    pending_rows = (
+        db.query(RewardRedeem, Reward)
+        .join(Reward, Reward.id == RewardRedeem.reward_id)
+        .filter(RewardRedeem.kid_id == kid_id,
+                RewardRedeem.status == RedeemStatus.pending)
+        .order_by(RewardRedeem.created_at.desc())
+        .all()
+    )
+
+    pending_rewards = [{
+        "redeem_id": rr.id,
+        "name": rw.name,
+        "cost": rw.cost,
+        "image_path": getattr(rw, "image_path", None),
+        "requested_at": rr.created_at.strftime("%d %b %Y %H:%M")
+    } for (rr, rw) in pending_rows]
 
     return templates.TemplateResponse("dashboard_kid.html", {
         "request": request,
@@ -102,53 +109,58 @@ def dashboard_kid(kid_id: int, request: Request, db: Session = Depends(get_db)):
         "family_name": family_name,
         "tasks": tasks_view,
         "rewards": rewards_view,
+        "pending_rewards": pending_rewards,
         "count_new": count_new,
         "count_pending": count_pending,
         "count_done": count_done,
     })
 
-@router.post("/join-family", name="kid_join_family")
-def kid_join_family(
-    kid_id: int = Form(...),
-    family_code: str = Form(...),
-    db: Session = Depends(get_db),
-):
+
+@router.post("/join-family")
+def kid_join_family(kid_id: int = Form(...),
+                    family_code: str = Form(...),
+                    db: Session = Depends(get_db)):
     try:
         join_family_util(db, kid_id=kid_id, code=family_code)
         return RedirectResponse(f"/kid/dashboard/{kid_id}?ok=joined", status_code=303)
     except ValueError:
         return RedirectResponse(f"/kid/dashboard/{kid_id}?err=invalid_code", status_code=303)
 
-@router.post("/submit/{task_id}", name="kid_submit_task")
-def submit_task(
-    task_id: int,
-    kid_id: int = Form(...),
-    note: str = Form(""),
-    evidence: UploadFile = File(None),
-    db: Session = Depends(get_db),
-):
+def _save_file(file: UploadFile):
+    upload_dir = "static/uploads"
+    os.makedirs(upload_dir, exist_ok=True)
+    filename = f"{uuid.uuid4().hex}_{file.filename}"
+    path = os.path.join(upload_dir, filename)
+    with open(path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return path
+
+
+@router.post("/submit/{task_id}")
+def submit_task(task_id: int,
+                kid_id: int = Form(...),
+                note: str = Form(""),
+                evidence: UploadFile = File(None),
+                db: Session = Depends(get_db)):
     task = db.get(Task, task_id)
     if not task or task.kid_id != kid_id:
         return RedirectResponse(f"/kid/dashboard/{kid_id}?err=no_task", status_code=303)
-
     if task.status not in [TaskStatus.assigned, TaskStatus.rejected]:
         return RedirectResponse(f"/kid/dashboard/{kid_id}?err=bad_status", status_code=303)
 
     path = _save_file(evidence) if evidence else None
-    # ถ้าใช้ utils.files: path = save_file(evidence, subdir="submissions") if evidence else None
-
-    sub = Submission(task_id=task_id, kid_id=kid_id, message=note.strip(), evidence_path=path)
+    sub = Submission(task_id=task_id, kid_id=kid_id,
+                     message=note.strip(), evidence_path=path)
     db.add(sub)
     task.status = TaskStatus.submitted
     db.commit()
+    toast("ส่งงานแล้ว",f"ภารกิจ {task.title} ถูกส่งเรียบร้อยแล้ว")
     return RedirectResponse(f"/kid/dashboard/{kid_id}?ok=submitted", status_code=303)
 
-@router.post("/redeem/{reward_id}", name="kid_redeem_reward")
-def redeem_reward(
-    reward_id: int,
-    kid_id: int = Form(...),
-    db: Session = Depends(get_db),
-):
+@router.post("/redeem/{reward_id}")
+def redeem_reward(reward_id: int,
+                  kid_id: int = Form(...),
+                  db: Session = Depends(get_db)):
     dup = db.query(RewardRedeem).filter(
         RewardRedeem.kid_id == kid_id,
         RewardRedeem.reward_id == reward_id,
@@ -158,5 +170,6 @@ def redeem_reward(
         return RedirectResponse(f"/kid/dashboard/{kid_id}?err=dup_redeem", status_code=303)
 
     rr = RewardRedeem(reward_id=reward_id, kid_id=kid_id)
-    db.add(rr); db.commit()
+    db.add(rr)
+    db.commit()
     return RedirectResponse(f"/kid/dashboard/{kid_id}?ok=redeem_requested", status_code=303)

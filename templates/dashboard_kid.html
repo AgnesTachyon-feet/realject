@@ -95,33 +95,62 @@
 
     <!-- ของรางวัล -->
     <div id="pane-rewards" style="display:none;">
-      {% if rewards and rewards|length > 0 %}
-        <div style="display:grid;gap:12px;">
-          {% for r in rewards %}
-            <div class="pill" style="text-align:left">
-              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-                <div>
-                  <div style="font-weight:700">{{ r.name }}</div>
-                  <div style="color:#666;font-size:0.9rem">{{ r.description }}</div>
-                  <div style="margin-top:4px;color:#444;font-size:0.9rem">
-                    ราคาแลก: <b>{{ r.cost }}</b> แต้ม
-                    {% if r.remaining is not none %}
-                      · คงเหลือ: <b>{{ r.remaining }}</b>
-                    {% endif %}
-                  </div>
-                </div>
-                <form method="post" action="{{ request.url_for('kid_redeem_reward', reward_id=r.id) }}" style="margin:0;">
-                  <input type="hidden" name="kid_id" value="{{ kid.id }}">
-                  <button class="btn" type="submit">🛒 แลกเลย!</button>
-                </form>
+
+  {% if pending_rewards and pending_rewards|length > 0 %}
+    <div class="pill" style="background:#fff7e6;border:1px solid #ffe7b8;">
+      <div style="font-weight:800;margin-bottom:6px;">กำลังรออนุมัติ</div>
+      <div style="display:grid;gap:10px;">
+        {% for pr in pending_rewards %}
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            {% if pr.image_path %}
+              <img src="/{{ pr.image_path }}" alt="reward"
+                   style="width:70px;height:70px;object-fit:cover;border-radius:8px;border:1px solid #eee;">
+            {% endif %}
+            <div style="flex:1;">
+              <div style="font-weight:700">{{ pr.name }}</div>
+              <div class="muted" style="font-size:0.9rem;">
+                แต้มที่ใช้: <b>{{ pr.cost }}</b> · ขอเมื่อ {{ pr.requested_at }}
               </div>
             </div>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="empty">ยังไม่มีของรางวัลให้แลก</div>
-      {% endif %}
+            <button class="btn" type="button" disabled style="opacity:.6;cursor:not-allowed;">
+              🕒 รอผู้ปกครองอนุมัติ
+            </button>
+          </div>
+        {% endfor %}
+      </div>
     </div>
+    <div style="height:10px;"></div>
+  {% endif %}
+
+  {% if rewards and rewards|length > 0 %}
+    <div style="display:grid;gap:12px;">
+      {% for r in rewards %}
+        <div class="pill" style="text-align:left">
+          {% if r.image_path %}
+            <img src="/{{ r.image_path }}" alt="reward image"
+                 style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin-bottom:8px;">
+          {% endif %}
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div>
+              <div style="font-weight:700">{{ r.name }}</div>
+              <div style="color:#666;font-size:0.9rem">{{ r.description }}</div>
+              <div style="margin-top:4px;color:#444;font-size:0.9rem">
+                ราคาแลก: <b>{{ r.cost }}</b> แต้ม
+              </div>
+            </div>
+            <form method="post" action="/kid/redeem/{{ r.id }}" style="margin:0;">
+              <input type="hidden" name="kid_id" value="{{ kid.id }}">
+              <button class="btn" type="submit">🛒 แลกเลย!</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty">ยังไม่มีของรางวัลให้แลก</div>
+  {% endif %}
+</div>
+
   {% endif %}
 
   <div style="margin-top:18px;text-align:center;">

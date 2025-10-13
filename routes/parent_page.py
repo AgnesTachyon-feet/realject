@@ -10,6 +10,7 @@ from tables.submissions import Submission
 from tables.reward_redeems import RewardRedeem, RedeemStatus
 from utils.family import create_family
 import datetime
+from core.notify import toast
 
 router = APIRouter(prefix="/parent", tags=["Parent Pages"])
 
@@ -20,7 +21,6 @@ def dashboard_parent(pid: int, request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/login", status_code=303)
 
     fam = db.query(Family).filter(Family.owner_parent_id == pid).first()
-    # โชว์เฉพาะ kids ในบ้านเดียวกัน (แนะนำ)
     kids = db.query(Users).join(FamilyMember, FamilyMember.user_id == Users.id).filter(
         FamilyMember.family_id.in_(
             db.query(FamilyMember.family_id).filter(FamilyMember.user_id == pid)
@@ -59,7 +59,6 @@ def review_page(pid: int, request: Request, db: Session = Depends(get_db)):
     if not parent or parent.role != RoleEnum.parent:
         return RedirectResponse("/login", status_code=303)
 
-    # ดึง submission ที่รอและเป็นงานของ parent คนนี้ (join แค่ใช้กรอง ไม่พึ่ง s.task)
     subs = (
         db.query(Submission)
         .join(Task, Task.id == Submission.task_id)
@@ -70,8 +69,8 @@ def review_page(pid: int, request: Request, db: Session = Depends(get_db)):
 
     items = []
     for s in subs:
-        t = db.get(Task, s.task_id)         # โหลด Task ตรงๆ แทน s.task
-        kid = db.get(Users, s.kid_id)       # โหลด Kid ตรงๆ
+        t = db.get(Task, s.task_id)
+        kid = db.get(Users, s.kid_id)
         items.append({
             "submission_id": s.id,
             "task_id": s.task_id,
@@ -92,7 +91,6 @@ def review_page(pid: int, request: Request, db: Session = Depends(get_db)):
     })
 
 
-# ปุ่มอนุมัติ/ปฏิเสธ
 @router.post("/submission/decision/{sid}", name="parent_decide_submission")
 def decide_submission(
     sid: int,
@@ -115,9 +113,11 @@ def decide_submission(
             kid.points = (kid.points or 0) + (task.points or 0)
         task.status = TaskStatus.approved
         sub.status = "approved"
+        toast("อนุมัติงานแล้ว ✅", f"เด็กได้รับแต้ม {task.points} จาก {task.title}")
     else:
         task.status = TaskStatus.rejected
         sub.status = "rejected"
+        toast("ปฏิเสธงานแล้ว ❌", f"ภารกิจ {task.title} ถูกปฏิเสธ")
 
     sub.reviewed_at = datetime.datetime.utcnow()
 
@@ -125,3 +125,72 @@ def decide_submission(
     db.commit()
 
     return RedirectResponse(f"/parent/submissions/{pid}?ok=done", status_code=303)
+
+@router.get("/redeems/{pid}", response_class=HTMLResponse, name="parent_redeems_page")
+def parent_redeems_page(pid: int, request: Request, db: Session = Depends(get_db)):
+    parent = db.get(Users, pid)
+    if not parent or parent.role != RoleEnum.parent:
+        return RedirectResponse("/login", status_code=303)
+
+    reqs = (
+        db.query(RewardRedeem)
+        .filter(RewardRedeem.status == RedeemStatus.pending)
+        .order_by(RewardRedeem.created_at.desc())
+        .all()
+    )
+
+    items = []
+    for rr in reqs:
+        kid = db.get(Users, rr.kid_id)
+        rw  = db.get(Reward, rr.reward_id)
+        if not kid or not rw:
+            continue
+        items.append({
+            "id": rr.id,
+            "kid_id": kid.id,
+            "kid_name": kid.first_name,
+            "reward_name": rw.name,
+            "cost": rw.cost,
+            "created_at": rr.created_at.strftime("%d %b %Y %H:%M"),
+        })
+
+    return templates.TemplateResponse("redeems_parent.html", {
+        "request": request,
+        "pid": pid,
+        "items": items
+    })
+
+
+@router.post("/redeem/decision/{redeem_id}", name="parent_redeem_decision")
+def parent_redeem_decision(
+    redeem_id: int,
+    pid: int = Form(...),
+    approve: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    rr = db.get(RewardRedeem, redeem_id)
+    if not rr:
+        return RedirectResponse(f"/parent/redeems/{pid}?err=no_redeem", status_code=303)
+
+    kid = db.get(Users, rr.kid_id)
+    rw  = db.get(Reward, rr.reward_id)
+    if not kid or not rw:
+        return RedirectResponse(f"/parent/redeems/{pid}?err=bad_ref", status_code=303)
+
+    if approve == "yes":
+        if (kid.points or 0) < (rw.cost or 0):
+            rr.status = RedeemStatus.rejected
+            toast("ยืนยันการแลกของรางวัล 🎁", f"อนุมัติแลก {Reward.name} สำเร็จ")
+            db.commit()
+            return RedirectResponse(f"/parent/redeems/{pid}?err=insufficient_points", status_code=303)
+
+        kid.points = (kid.points or 0) - (rw.cost or 0)
+        rr.status = RedeemStatus.approved
+        rr.reviewed_at = rr.reviewed_at or __import__("datetime").datetime.utcnow()
+        db.commit()
+        return RedirectResponse(f"/parent/redeems/{pid}?ok=approved", status_code=303)
+
+    rr.status = RedeemStatus.rejected
+    rr.reviewed_at = rr.reviewed_at or __import__("datetime").datetime.utcnow()
+    db.commit()
+    return RedirectResponse(f"/parent/redeems/{pid}?ok=rejected", status_code=303)

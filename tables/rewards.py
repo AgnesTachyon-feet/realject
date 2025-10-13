@@ -9,5 +9,5 @@ class Reward(Base):
     name = Column(String(120), nullable=False)
     description = Column(Text)
     cost = Column(Integer, nullable=False, default=0)
-    image_path = Column(String)  # optional
+    image_path = Column(String)
     created_at = Column(DateTime, default=datetime.utcnow)
