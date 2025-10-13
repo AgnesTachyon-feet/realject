@@ -14,5 +14,6 @@ class Users(Base):
     password = Column(String, nullable=False)
     first_name = Column(String, nullable=False)
     role = Column(PGEnum(RoleEnum, name="role_enum", create_type=True, validate_strings=True), nullable=False)
+    points = Column(Integer, nullable=False, default=0)
     create_date = Column(DateTime, default=datetime.datetime.utcnow)
     update_date = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)

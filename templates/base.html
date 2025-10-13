@@ -3,6 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
     <title>{% block title %}Family Task Manager{% endblock %}</title>
     <style>
       body {
@@ -35,6 +37,11 @@
         width: 100%;
         max-width: 380px;
       }
+      header img.logo {
+      width: 55px;
+      height: 55px;
+      object-fit: cover;
+      }
       .btn {
         background: #111;
         color: white;
@@ -47,6 +54,21 @@
       .btn:hover {
         background: #333;
       }
+      header .brand {
+      font-size: 1.3rem;
+      font-weight: 500;
+      margin-left: 10px;
+      }
+
+      header .nav-link {
+      color: #fff !important;
+      font-weight: 500;
+      text-decoration: none;
+      }
+
+      header .nav-link:hover {
+      text-decoration: underline;
+      }
       a { color: #111; text-decoration: none; }
       footer {
         text-align: center;
@@ -57,12 +79,18 @@
   </head>
   <body>
     <header>
-      <div>🧭 Family Task Manager</div>
-      <a href="/login" style="color:white;">Logout</a>
+      <div>
+        <img
+          src="{{ request.url_for('static', path='photo/2 (1).ico') }}"
+          class="logo ms-2"
+          alt="D-quests"><span class="brand">D-quests</span>
+      </div>
+      <a href="/login" class="nav-link me-2">Logout</a>
     </header>
+
     <main>
       {% block content %}{% endblock %}
     </main>
-    <footer>© 2025 Family Task Manager — Minimal</footer>
+    <footer>© 2025 D-quests</footer>
   </body>
 </html>
