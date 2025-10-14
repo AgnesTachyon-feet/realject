@@ -28,20 +28,4 @@ def parent_history_page(pid: int, request: Request, db: Session = Depends(get_db
         TaskStatus.submitted: "รอตรวจ",
         TaskStatus.assigned: "งานใหม่",
     }
-    items = []
-    for t in tasks_done:
-        items.append({
-            "task_id": t.id,
-            "kid_id": t.kid_id,
-            "title": t.title,
-            "points": t.points or 0,
-            "status": status_map.get(t.status, t.status.value if hasattr(t.status,'value') else str(t.status)),
-            "created_at": t.created_at.strftime("%d %b %Y %H:%M") if t.created_at else "-",
-            "completed_at": t.completed_at.strftime("%d %b %Y %H:%M") if t.completed_at else "-",
-        })
-
-    return templates.TemplateResponse("parent_history.html", {
-        "request": request,
-        "pid": pid,
-        "items": items
-    })
+    
