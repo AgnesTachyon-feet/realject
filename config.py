@@ -37,12 +37,7 @@ def th_datetime(dt):
         return str(dt)
 templates.env.filters["th_datetime"] = th_datetime
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+
 
 @event.listens_for(engine, "connect")
 def set_bangkok_timezone(dbapi_conn, conn_record):
